@@ -110,8 +110,7 @@ On the real image, booted on hardware:
 - `nix.mount` active, `/nix` bind-mounted from `/var/lib/nix` on btrfs
 - `nix-daemon.service` active, `nix store info` reports `Store URL: daemon`
 - unprivileged user in `wheel` reports `Trusted: 1`
-- layered and local rpm-ostree packages gone; `corectrl` and `goxlr-utility`
-  present from the image
+- layered and local rpm-ostree packages gone
 
 Earlier, on `fedora-bootc:44` under systemd:
 
@@ -129,7 +128,7 @@ avoids eating the ~115 GB left on the nvme).
 
 ```bash
 just build            # local build
-bootc switch --enforce-container-sigpolicy ghcr.io/physarella/bazzite-nix:latest
+bootc switch --enforce-container-sigpolicy ghcr.io/aaron-miller/bazzite-nix:latest
 ```
 
 Signing is already wired: `cosign.pub` at the repo root is the verification key,
@@ -172,11 +171,3 @@ shell config). Neither needs distrobox.
   image. Back up `~/.config/home-manager`, not `/nix`.
 - **Don't put the store on WorkVault.** If the drive is not mounted at boot the
   bind mount fails and every nix-installed binary vanishes from PATH.
-
-## Next step worth doing
-
-The packages currently layered on the host with `rpm-ostree` — `goxlr-utility`
-(local RPM), `corectrl`, `boost`, `librealsense`, `libuvc`, `onnxruntime`,
-`opencv`, `opencv-video`, `openhmd`, `openvr-api` — are precisely what a custom
-image is for. Moving them into `build.sh` gets rid of the layering entirely and
-makes the goxlr RPM survive rebases instead of needing to be re-applied.

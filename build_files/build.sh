@@ -5,29 +5,6 @@ set -ouex pipefail
 # Copy the contents of system_files/ of the git repo to /
 cp -avf "/ctx/system_files"/. /
 
-### Hardware support -- must live in the image
-#
-# corectrl ships dbus system services and the privileged helper's polkit action
-# into /usr, which nix fundamentally cannot provide. Stock Fedora 44 package,
-# no COPR or RPM Fusion needed.
-dnf5 install -y corectrl
-
-# goxlr-utility is not in any repo; upstream ships an RPM on GitHub releases.
-# Pinned by version and checksum so a retagged release cannot change the build.
-# Verified byte-identical to the copy currently layered on the host.
-GOXLR_VER=1.2.4
-GOXLR_SHA=a3006b5536f98d162904c41a407c66810df2509ef47bb6457cbc8f2a05c297ea
-curl -fsSL -o /tmp/goxlr.rpm \
-  "https://github.com/GoXLR-on-Linux/goxlr-utility/releases/download/v${GOXLR_VER}/goxlr-utility-${GOXLR_VER}-1.x86_64.rpm"
-echo "${GOXLR_SHA}  /tmp/goxlr.rpm" | sha256sum -c -
-dnf5 install -y /tmp/goxlr.rpm
-rm -f /tmp/goxlr.rpm
-
-# The RPM ships no systemd unit -- upstream expects you to launch the daemon by
-# hand from its desktop entry. system_files/ provides a user unit; enable it
-# globally so it starts with the graphical session instead.
-systemctl --global enable goxlr-daemon.service
-
 ### Deliberately NOT installed: the old Monado dependency set
 #
 # boost, libuvc, onnxruntime, opencv, opencv-video, openhmd, openvr-api and
@@ -120,16 +97,16 @@ systemctl enable nix-daemon.service
 ### Signature policy for this image
 #
 # CI signs the image with cosign, but a signature nothing checks is decoration.
-# The base ships policy for ghcr.io/ublue-os only; ghcr.io/physarella would fall
+# The base ships policy for ghcr.io/ublue-os only; ghcr.io/aaron-miller would fall
 # through to the catch-all "insecureAcceptAnything" entry and never be verified.
 #
 # Merged with jq rather than shipped as a static policy.json, so the base's own
 # entries (ublue-os, Red Hat, toolbx) survive whatever upstream changes them to.
 # The key and the registries.d entry come from system_files/.
-jq --arg scope "ghcr.io/physarella" '
+jq --arg scope "ghcr.io/aaron-miller" '
   .transports.docker[$scope] = [{
     "type": "sigstoreSigned",
-    "keyPaths": ["/etc/pki/containers/physarella.pub"],
+    "keyPaths": ["/etc/pki/containers/aaron-miller.pub"],
     "signedIdentity": {"type": "matchRepository"}
   }]
 ' /etc/containers/policy.json >/etc/containers/policy.json.new
@@ -137,7 +114,7 @@ mv /etc/containers/policy.json.new /etc/containers/policy.json
 chmod 644 /etc/containers/policy.json
 
 # Fail the build rather than ship an image whose own updates cannot be verified.
-jq -e '.transports.docker["ghcr.io/physarella"][0].type == "sigstoreSigned"' \
+jq -e '.transports.docker["ghcr.io/aaron-miller"][0].type == "sigstoreSigned"' \
   /etc/containers/policy.json >/dev/null
 
 ### Homebrew -- removed

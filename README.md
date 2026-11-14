@@ -1,14 +1,14 @@
 # bazzite-nix
 
 A custom [Bazzite](https://bazzite.gg) image with [Nix](https://nixos.org) as
-the package manager, built on `ghcr.io/ublue-os/bazzite:stable`.
+the package manager, built on `ghcr.io/ublue-os/bazzite-nvidia:stable`.
 
 The point: install things without a container, without a rebuild, and without
 a reboot. Homebrew is gone, distrobox stays for when you genuinely want a
 container, and the system layer holds only what actually needs to be there.
 
 ```bash
-sudo bootc switch --enforce-container-sigpolicy ghcr.io/physarella/bazzite-nix:latest
+sudo bootc switch --enforce-container-sigpolicy ghcr.io/aaron-miller/bazzite-nix:latest
 ```
 
 ## What this changes
@@ -28,10 +28,9 @@ nix run home-manager/master -- init --switch
 **No Homebrew.** The units are masked and the 126 MB `homebrew.tar.zst` is
 dropped from the image.
 
-**Only real system packages layered.** `corectrl` (dbus system services and a
-polkit helper) and `goxlr-utility` (udev rules, pinned to an upstream GitHub
-RPM by sha256). Everything previously layered with `rpm-ostree` is either
-included here or deliberately dropped — `build.sh` records which and why.
+**Few system packages.** Nix and the pieces it needs are the only packages the
+image adds. Everything previously layered with `rpm-ostree` is either dropped or
+deliberately omitted — `build.sh` records which and why.
 
 **`ujust clean-home`.** Trash and caches older than 30 days, plus nix store GC.
 Manual by design: the rules live outside every `systemd-tmpfiles` search path,
